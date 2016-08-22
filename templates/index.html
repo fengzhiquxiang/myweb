@@ -1,0 +1,144 @@
+<html>
+	<head>
+		<style type="text/css">
+			#search-results tr:hover {
+				background-color: blue;
+				color: white;
+				cursor: pointer; 
+			}
+			#mybooks tbody tr:hover {
+				background-color: blue;
+				color: white;
+				cursor: pointer; 
+			}
+			#page-switcher{
+				width: 100%;
+				text-align: center;
+			}
+			#page-switcher button{
+				font-size: 24px;
+				font-weight: bold;
+				margin:1em;
+				padding: .3em;
+			}
+			#search-page{
+				display: none;
+			}
+			#del-btn{
+				border-radius: 8px;
+				color: white;
+				background-color: grey;
+				margin:1em;
+				padding: .3em;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="page-switcher">
+			<button id="b1">show books in my bag</button>
+			<button id="b2">books searched</button>
+		</div>
+
+		<div id="mybooks">
+			<table>
+				<thead>
+					<tr style="text-align: left;">
+						<th width="40%">Title</th>
+						<th width="30%">Author</th>
+						<th width="10%">Most Popular</th>
+						<th width="15%">ID</th>
+						<th width="5%"></th>
+					</tr>
+				</thead>
+				<tbody id="my-bs">
+					{{range .Books}}
+						<tr id="book-{{.ID}}">
+							<td>{{.Title}}</td>
+							<td>{{.Author}}</td>
+							<td>{{.MostPopular}}</td>
+							<td>{{.ID}}</td>
+							<td><button id="del-btn">delete</button></td>
+						</tr>
+					{{end}}
+				</tbody>
+			</table>
+		</div>
+
+		<div id="search-page">
+			<form id="search-form" onsubmit="return false">
+				<input name="search" />
+				<input type="submit" value="Search"/>
+			</form>
+
+			<table id="search-content">
+				<thead>
+					<tr style="text-align: left;">
+						<th width="40%">Title</th>
+						<th width="30%">Author</th>
+						<th width="10%">Year</th>
+						<th width="20%">ID</th>
+					</tr>
+				</thead>
+				<tbody id="search-results"></tbody>
+			</table>
+		</div>
+
+		<script type="text/javascript" src="http://code.jquery.com/jquery-3.1.0.min.js"></script>
+		<script type="text/javascript">
+			$("#b1").click(function(){
+				$("#mybooks").show();
+				$("#search-page").hide();
+			});
+			$("#b2").click(function(){
+				$("#mybooks").hide();
+				$("#search-page").show();
+			});
+			$("button[id='del-btn']").each(function(){
+				$(this).click(function(){
+					var foo = $(this).parent().parent();
+					var id = foo.attr("id");
+					$.ajax({
+						url: "/books/delete?id=" + id,
+						method: "GET",
+						success: function(){
+							foo.remove();
+						}
+					});
+				});
+			});
+
+			$("#search-form").submit(function(){
+				$.ajax({
+					url: "/search",
+					method: "POST",
+					data: $("#search-form").serialize(),
+					success: function(rawData){
+						var parsed = JSON.parse(rawData);
+						if (!parsed) return;
+
+						var searchResults = $("#search-results");
+						searchResults.empty();
+
+						parsed.forEach(function(result) {
+							var row = $("<tr><td>"+result.Title+"</td><td>"+result.Author+"</td><td>"+result.Year+"</td><td>"+result.ID+"</td></tr>");
+							searchResults.append(row);
+							row.on("click",function(){
+								$.ajax({
+									url:"/books/add?id=" + result.ID,
+									method: "GET",
+									success: function(data){
+										var bk = JSON.parse(data);
+										if(!bk) return;
+										$("#my-bs").append("<tr id='book-"+ bk.BookData.ID + "'><td>"+bk.BookData.Title+"</td><td>"+bk.BookData.Author+"</td><td>"+bk.Classification.MostPopular+"</td><td>"+bk.BookData.ID+"</td><td><button id='del-btn'>delete</button></td></tr>");
+									}
+								})
+							});
+						});
+					}
+				});
+
+				return false;
+			});
+		</script>
+	</body>
+</html>
