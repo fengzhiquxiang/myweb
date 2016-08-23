@@ -1,14 +1,10 @@
 <html>
 	<head>
 		<style type="text/css">
-			#search-results tr:hover {
-				background-color: blue;
-				color: white;
-				cursor: pointer; 
-			}
-			#mybooks tbody tr:hover {
-				background-color: blue;
-				color: white;
+			#search-results tr:hover, 
+			#mybooks tbody tr:hover,
+			#sort:hover {
+				background-color: lightgrey;
 				cursor: pointer; 
 			}
 			#page-switcher{
@@ -43,16 +39,16 @@
 			<table>
 				<thead>
 					<tr style="text-align: left;">
-						<th width="40%">Title</th>
-						<th width="30%">Author</th>
-						<th width="10%">Most Popular</th>
-						<th width="15%">ID</th>
+						<th id="sort" name="title" width="40%">Title</th>
+						<th id="sort" name="author" width="30%">Author</th>
+						<th id="sort" name="mostpopular" width="10%">Most Popular</th>
+						<th id="sort" name="id" width="15%">ID</th>
 						<th width="5%"></th>
 					</tr>
 				</thead>
 				<tbody id="my-bs">
 					{{range .Books}}
-						<tr id="book-{{.ID}}">
+						<tr id="{{.ID}}">
 							<td>{{.Title}}</td>
 							<td>{{.Author}}</td>
 							<td>{{.MostPopular}}</td>
@@ -107,6 +103,19 @@
 				});
 			});
 
+			$("th[id='sort']").each(function(){
+				$(this).click(function(){
+					var sortStr = $(this).attr("name");
+					$.ajax({
+						url: "/books/sort?by=" + sortStr,
+						method: "GET",
+						success: function(data){
+							appendBooks(data);
+						} 
+					});
+				});
+			});
+
 			$("#search-form").submit(function(){
 				$.ajax({
 					url: "/search",
@@ -139,6 +148,31 @@
 
 				return false;
 			});
+
+		function appendBooks(dd){
+			var parsed = JSON.parse(dd);
+			if (!parsed) return;
+			var mybs = $("#my-bs");
+			mybs.empty();
+
+			$.each( parsed, function( index, result ) {
+				var bookid = result.ID;
+			  	var row = $("<tr id="+ bookid +"><td>"+result.Title+"</td><td>"+result.Author+"</td><td>"+result.MostPopular+"</td><td>"+result.ID+"</td><td><button id='del-btn' onclick='delbk("+bookid+")'>delete</button></td></tr>");
+				mybs.append(row);
+			});
+		}
+
+		function delbk(bookid){
+			var bar = "#"+bookid;
+			var foo = $(bar);
+			$.ajax({
+				url: "/books/delete?id=" + bookid,
+				method: "GET",
+				success: function(){
+					foo.remove();
+				}
+			});
+		}
 		</script>
 	</body>
 </html>

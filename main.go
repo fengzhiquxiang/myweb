@@ -16,7 +16,7 @@ import (
 )
 
 type Book struct{
-	Title string
+	Title string 
 	Author string
 	MostPopular string
 	ID string
@@ -112,9 +112,40 @@ func main() {
 		if err = db.Ping(); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
-		_, err = db.Exec("delete from foo where ID=?", url.QueryEscape((r.FormValue("id"))[5:]))
+		_, err = db.Exec("delete from foo where ID=?", url.QueryEscape(r.FormValue("id")))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+	})
+
+	http.HandleFunc("/books/sort", func(w http.ResponseWriter, r *http.Request) {
+		if err := db.Ping(); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		sortStr := r.FormValue("by")
+		if sortStr != "title" && sortStr != "author" && sortStr != "mostpopular" && sortStr != "id"{
+			http.Error(w, "invalid column name", http.StatusBadRequest)
+			return
+		}
+		fmt.Println(sortStr)
+		rs, err := db.Query("select * from foo ORDER by " + sortStr)
+		if err != nil {
+			// http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Fatal(err)
+		}
+		var bks []Book
+		for rs.Next() {
+			var b Book
+			if err := rs.Scan(&b.Title, &b.Author, &b.MostPopular, &b.ID); err != nil{
+				log.Fatal(err)
+			}
+			bks = append(bks, b)
+		}
+		for i, v := range bks {
+			fmt.Println(i, "-->", v)
+		}
+		if err := json.NewEncoder(w).Encode(bks); err != nil {
+			log.Fatal(err)
 		}
 	})
 
