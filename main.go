@@ -34,6 +34,8 @@ type SearchResult struct{
 }
 
 func main() {
+	var sortStr string
+
 	templates := template.Must(template.ParseFiles("src/myweb/templates/index.html"))
 
 	db, err := sql.Open("mysql", "root:luzlhefh@/mywebdb")
@@ -119,16 +121,69 @@ func main() {
 	})
 
 	http.HandleFunc("/books/sort", func(w http.ResponseWriter, r *http.Request) {
-		if err := db.Ping(); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		sortStr := r.FormValue("by")
+		//by
+		sortStr = r.FormValue("by")
 		if sortStr != "title" && sortStr != "author" && sortStr != "mostpopular" && sortStr != "id"{
 			http.Error(w, "invalid column name", http.StatusBadRequest)
 			return
 		}
-		fmt.Println(sortStr)
-		rs, err := db.Query("select * from foo ORDER by " + sortStr)
+		var orderStr string
+		orderStr = " ORDER by " + r.FormValue("by")
+		//end by
+
+		if err := db.Ping(); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		rs, err := db.Query("select * from foo" + orderStr)
+		if err != nil {
+			// http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Fatal(err)
+		}
+		var bks []Book
+		for rs.Next() {
+			var b Book
+			if err := rs.Scan(&b.Title, &b.Author, &b.MostPopular, &b.ID); err != nil{
+				log.Fatal(err)
+			}
+			bks = append(bks, b)
+		}
+		for i, v := range bks {
+			fmt.Println(i, "-->", v)
+		}
+		if err := json.NewEncoder(w).Encode(bks); err != nil {
+			log.Fatal(err)
+		}
+	})
+	http.HandleFunc("/books/filter", func(w http.ResponseWriter, r *http.Request) {
+		//filter
+		var fw string
+		fw = r.FormValue("option")
+		var where string
+		if fw != "" && fw != "fiction" && fw != "nonfiction" {
+			http.Error(w, "invalid column name", http.StatusBadRequest)
+		}
+		if fw == "" {
+			where = ""
+		}
+		if fw == "fiction" {
+			where = " WHERE mostpopular BETWEEN 800 AND 900"
+		}
+		if fw == "nonfiction" {
+			where = " WHERE mostpopular NOT BETWEEN 800 AND 900"
+		}
+		//end filter
+		
+		var barStr string
+		if sortStr != "" {
+			barStr = " order by " + sortStr
+		}else{
+			barStr = ""
+		}
+
+		if err := db.Ping(); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		rs, err := db.Query("select * from foo" + where + barStr)
 		if err != nil {
 			// http.Error(w, err.Error(), http.StatusInternalServerError)
 			log.Fatal(err)

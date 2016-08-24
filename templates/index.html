@@ -1,5 +1,17 @@
-<html>
+<!DOCTYPE html>
+<html  lang="zh-CN">
 	<head>
+		<!-- 新 Bootstrap 核心 CSS 文件 -->
+		<link rel="stylesheet" href="//cdn.bootcss.com/bootstrap/3.3.5/css/bootstrap.min.css">
+
+		<!-- 可选的Bootstrap主题文件（一般不用引入） -->
+		<link rel="stylesheet" href="//cdn.bootcss.com/bootstrap/3.3.5/css/bootstrap-theme.min.css">
+
+		<!-- jQuery文件。务必在bootstrap.min.js 之前引入 -->
+		<script src="//cdn.bootcss.com/jquery/1.11.3/jquery.min.js"></script>
+
+		<!-- 最新的 Bootstrap 核心 JavaScript 文件 -->
+		<script src="//cdn.bootcss.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
 		<style type="text/css">
 			#search-results tr:hover, 
 			#mybooks tbody tr:hover,
@@ -7,79 +19,80 @@
 				background-color: lightgrey;
 				cursor: pointer; 
 			}
-			#page-switcher{
-				width: 100%;
-				text-align: center;
-			}
-			#page-switcher button{
-				font-size: 24px;
-				font-weight: bold;
-				margin:1em;
-				padding: .3em;
-			}
 			#search-page{
 				display: none;
-			}
-			#del-btn{
-				border-radius: 8px;
-				color: white;
-				background-color: grey;
-				margin:1em;
-				padding: .3em;
 			}
 		</style>
 	</head>
 	<body>
-		<div id="page-switcher">
-			<button id="b1">show books in my bag</button>
-			<button id="b2">books searched</button>
-		</div>
+		<div class="container">
+			<div id="page-switcher" class="btn-group btn-group-lg" role="group" aria-label="...">
+				<button id="b1" class="btn btn-info">show books in my bag</button>
+				<button id="b2" class="btn btn-info">books searched</button>
+			</div>
+			<div id="mybooks">
+				<div class="row">
+					  	<div class="col-md-10"></div>
+					  	<div class="col-md-2">
+							<select id="filter" onchange="filterbook()" class="form-control">
+								<option value="">all</option>
+								<option value="fiction">fiction</option>
+								<option value="nonfiction">nonfiction</option>
+							</select>
+						</div>
+				</div>
 
-		<div id="mybooks">
-			<table>
-				<thead>
-					<tr style="text-align: left;">
-						<th id="sort" name="title" width="40%">Title</th>
-						<th id="sort" name="author" width="30%">Author</th>
-						<th id="sort" name="mostpopular" width="10%">Most Popular</th>
-						<th id="sort" name="id" width="15%">ID</th>
-						<th width="5%"></th>
-					</tr>
-				</thead>
-				<tbody id="my-bs">
-					{{range .Books}}
-						<tr id="{{.ID}}">
-							<td>{{.Title}}</td>
-							<td>{{.Author}}</td>
-							<td>{{.MostPopular}}</td>
-							<td>{{.ID}}</td>
-							<td><button id="del-btn">delete</button></td>
+				<table class="table table-striped">
+					<thead>
+						<tr>
+							<th id="sort" name="title" width="40%">Title</th>
+							<th id="sort" name="author" width="30%">Author</th>
+							<th id="sort" name="mostpopular" width="10%">Most Popular</th>
+							<th id="sort" name="id" width="15%">ID</th>
+							<th width="5%"></th>
 						</tr>
-					{{end}}
-				</tbody>
-			</table>
+					</thead>
+					<tbody id="my-bs">
+						{{range .Books}}
+							<tr id="{{.ID}}">
+								<td>{{.Title}}</td>
+								<td>{{.Author}}</td>
+								<td>{{.MostPopular}}</td>
+								<td>{{.ID}}</td>
+								<td><button id="del-btn">delete</button></td>
+							</tr>
+						{{end}}
+					</tbody>
+				</table>
+			</div>
+
+			<div id="search-page">
+				<div class="row">
+					  	<div class="col-md-8"></div>
+					  	<div class="col-md-4">
+							<form id="search-form" onsubmit="return false" class="form-inline">
+								<input name="search" class="form-control" />
+								<input type="submit" class="btn btn-default" value="Search"/>
+							</form>
+						</div>
+				</div>
+
+				<table id="search-content" class="table table-striped">
+					<thead>
+						<tr>
+							<th width="40%">Title</th>
+							<th width="30%">Author</th>
+							<th width="10%">Year</th>
+							<th width="20%">ID</th>
+						</tr>
+					</thead>
+					<tbody id="search-results"></tbody>
+				</table>
+			</div>
 		</div>
-
-		<div id="search-page">
-			<form id="search-form" onsubmit="return false">
-				<input name="search" />
-				<input type="submit" value="Search"/>
-			</form>
-
-			<table id="search-content">
-				<thead>
-					<tr style="text-align: left;">
-						<th width="40%">Title</th>
-						<th width="30%">Author</th>
-						<th width="10%">Year</th>
-						<th width="20%">ID</th>
-					</tr>
-				</thead>
-				<tbody id="search-results"></tbody>
-			</table>
-		</div>
-
+		<!--
 		<script type="text/javascript" src="http://code.jquery.com/jquery-3.1.0.min.js"></script>
+		-->
 		<script type="text/javascript">
 			$("#b1").click(function(){
 				$("#mybooks").show();
@@ -149,30 +162,41 @@
 				return false;
 			});
 
-		function appendBooks(dd){
-			var parsed = JSON.parse(dd);
-			if (!parsed) return;
-			var mybs = $("#my-bs");
-			mybs.empty();
+			function appendBooks(dd){
+				var parsed = JSON.parse(dd);
+				if (!parsed) return;
+				var mybs = $("#my-bs");
+				mybs.empty();
 
-			$.each( parsed, function( index, result ) {
-				var bookid = result.ID;
-			  	var row = $("<tr id="+ bookid +"><td>"+result.Title+"</td><td>"+result.Author+"</td><td>"+result.MostPopular+"</td><td>"+result.ID+"</td><td><button id='del-btn' onclick='delbk("+bookid+")'>delete</button></td></tr>");
-				mybs.append(row);
-			});
-		}
+				$.each( parsed, function( index, result ) {
+					var bookid = result.ID;
+				  	var row = $("<tr id="+ bookid +"><td>"+result.Title+"</td><td>"+result.Author+"</td><td>"+result.MostPopular+"</td><td>"+result.ID+"</td><td><button id='del-btn' onclick='delbk("+bookid+")'>delete</button></td></tr>");
+					mybs.append(row);
+				});
+			}
 
-		function delbk(bookid){
-			var bar = "#"+bookid;
-			var foo = $(bar);
-			$.ajax({
-				url: "/books/delete?id=" + bookid,
-				method: "GET",
-				success: function(){
-					foo.remove();
-				}
-			});
-		}
+			function delbk(bookid){
+				var bar = "#"+bookid;
+				var foo = $(bar);
+				$.ajax({
+					url: "/books/delete?id=" + bookid,
+					method: "GET",
+					success: function(){
+						foo.remove();
+					}
+				});
+			}
+
+			function filterbook(){
+				var fw = $("#filter").val();
+				$.ajax({
+					url: "/books/filter?option=" + fw,
+					method: "GET",
+					success: function (data){
+						appendBooks(data);
+					}
+				});
+			}
 		</script>
 	</body>
 </html>
